@@ -15,18 +15,13 @@ bundle install
 
 === How to run
 
-[source,bash]
-----
-bundle install
-bundle exec rackup config.ru
-----
 
-or, for development and reloading,
+    # with rackup
+    NEO4J_USERNAME=username NEO4J_PASSWORD=password bundle exec rackup config.ru
 
-[source,bash]
-----
-bundle install
-gem install shotgun
-bundle exec shotgun movies.rb
-----
+    # with shotgun for for development / reloading
+    gem install shotgun
+    NEO4J_USERNAME=username NEO4J_PASSWORD=password bundle exec shotgun config.ru
 
+If your neo4j server is not running on `localhost:7474` then you can specify an
+alternate location with an environment variable named `NEO4J_URL`.
