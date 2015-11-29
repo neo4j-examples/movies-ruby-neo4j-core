@@ -18,7 +18,7 @@ bundle install
 [source,bash]
 ----
 bundle install
-bundle exec rackup config.ru
+NEO4J_URL=http://neo4j:neo5j@localhost:7474 bundle exec rackup config.ru
 ----
 
 or, for development and reloading,
@@ -27,6 +27,6 @@ or, for development and reloading,
 ----
 bundle install
 gem install shotgun
-bundle exec shotgun movies.rb
+NEO4J_URL=http://neo4j:neo5j@localhost:7474 bundle exec shotgun movies.rb
 ----
 
