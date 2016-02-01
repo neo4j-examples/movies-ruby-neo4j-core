@@ -15,6 +15,7 @@ bundle install
 
 === How to run
 
+In your Neo4j web console UI you should type `:play movies` to load the data into your database.
 
     # with rackup
     NEO4J_URL=http://neo4j:neo5j@localhost:7474 bundle exec rackup config.ru
