@@ -1,20 +1,29 @@
 require 'sinatra'
+require 'json'
 require 'neo4j-core'
+require 'neo4j/core/cypher_session/adaptors/http'
+require 'neo4j/core/cypher_session/adaptors/bolt'
 set :root, File.dirname(__FILE__)
 set :public_folder, File.dirname(__FILE__) + '/static'
 
-neo4j_url = ENV['NEO4J_URL'] || 'http://localhost:7474'
-neo4j_username = ENV['NEO4J_USERNAME'] || 'neo4j'
-neo4j_password = ENV['NEO4J_PASSWORD'] || 'neo4j'
+NEO4J_URL = ENV['NEO4J_URL'] || 'http://localhost:7474'
 
-session = Neo4j::Session.open(:server_db, neo4j_url, basic_auth: {username: neo4j_username, password: neo4j_password})
+Neo4j::Core::CypherSession::Adaptors::Base.subscribe_to_query(&method(:puts))
+
+# Sinatra creates a thread for each request so we create a session inside the thread as needed
+def get_session
+  adaptor_class = NEO4J_URL.match(/^bolt:/) ? Neo4j::Core::CypherSession::Adaptors::Bolt : Neo4j::Core::CypherSession::Adaptors::HTTP
+
+  Neo4j::Core::CypherSession.new(adaptor_class.new(NEO4J_URL))
+end
 
 get '/' do
   send_file File.expand_path('index.html', settings.public_folder)
 end
 
 get '/graph' do
-  puts "QUERY"
+  session = get_session
+
   query = """
     MATCH (m:Movie)<-[:ACTED_IN]-(a:Person)
     RETURN m.title as movie, collect(a.name) as cast
@@ -26,7 +35,6 @@ get '/graph' do
   rels = []
   i = 0
   movies_and_casts.each do |row|
-    # puts "results #{row}"
     nodes << {title: row.movie, label: 'movie'}
     target = i
     i += 1
@@ -42,16 +50,18 @@ get '/graph' do
     end
 
   end
-  {nodes: nodes, links: rels}.to_json
 
+  {nodes: nodes, links: rels}.to_json
 end
 
 get "/search" do
-  puts "query #{request[:q]}"
+  session = get_session
+
   query = "MATCH (movie:Movie) WHERE movie.title =~ {title} RETURN movie.title as title, movie.released as released, movie.tagline as tagline"
+  response = session.query(query, title: "(?i).*#{request[:q]}.*") rescue nil
   response = session.query(query, title: "(?i).*#{request[:q]}.*")
   results = []
-  response.each do |row|
+  response.to_a.each do |row|
     results << {
         "movie" => {
             "title" => row[:title],
@@ -64,11 +74,10 @@ get "/search" do
 end
 
 get "/movie/:movie" do
-  puts "movie #{params['movie']}"
+  session = get_session
+
   query = "MATCH (movie:Movie {title:{title}}) OPTIONAL MATCH (movie)<-[r]-(person:Person) RETURN movie.title as title, collect([person.name, head(split(lower(type(r)), '_')), r.roles]) as cast LIMIT 1"
-  response = session.query(query, title: params['movie'])
-  row = response.next
-  puts row.to_json
+  row = session.query(query, title: params['movie']).first
   cast = []
   row[:cast].each do |c|
     cast << {
@@ -82,6 +91,5 @@ get "/movie/:movie" do
       "cast" => cast
   }
   result.to_json
-
 end
 

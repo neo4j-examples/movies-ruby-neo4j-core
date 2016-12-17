@@ -22,9 +22,10 @@ Then to start up the web server:
     # with rackup
     NEO4J_URL=http://neo4j:neo5j@localhost:7474 bundle exec rackup config.ru
 
-    # with shotgun for for development / reloading
-    gem install shotgun
-    NEO4J_URL=http://neo4j:neo5j@localhost:7474 bundle exec shotgun config.ru
+If your neo4j server is not running on `http://localhost:7474` then you can specify an alternate location with an environment variable named `NEO4J_URL`.  You can use either `http` or `bolt` like so:
+
+    NEO4J_URL=http://neo4j:password@localhost:7474
+    NEO4J_URL=bolt://neo4j:password@localhost:7687
 
 If your neo4j server is not running on `localhost:7474` then you can specify an
 alternate location with an environment variable named `NEO4J_URL`.
